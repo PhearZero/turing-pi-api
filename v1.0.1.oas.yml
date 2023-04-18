@@ -1,0 +1,184 @@
+openapi: 3.1.0
+info:
+  title: Turing Pi V2 BMC
+  description: |-
+    APIs are the backbone of many modern applications. They allow different systems and software to communicate and 
+    share data, making it possible for developers to create seamless and integrated user experiences. Without APIs,
+    many of the apps and services we rely on every day would not be possible, from social media platforms to
+    e-commerce websites and more. They are the unsung heroes of software development, working quietly behind the 
+    scenes to connect different systems and make them work together in harmony.
+
+    Turing Pi V2 BMC is no different. The Web interface and $tpcli are both using the same API in background to 
+    interact with various board features. You can even skip these built-in tools and call the API with curl 
+    commands or any other external application. In the advance guide section, we will go over how to extend
+    this API with your own functions.
+
+  version: 1.0.1
+servers:
+  - url: http://192.168.1.35/api/bmc
+paths:
+  /:
+    get:
+      summary: Get a key from the BMC
+      operationId: getKey
+      parameters:
+        - in: query
+          name: opt
+          required: true
+          schema:
+            type: string
+            enum: ['get']
+            default: 'get'
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: ["nodeinfo", "power", "usb", "sdcard"]
+      responses:
+        # TODO: Make deterministic
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  response:
+                    type: array
+                    items:
+                      oneOf:
+                        - type: object
+                          description: Request Error
+                          properties:
+                            code:
+                              type: integer
+                            result:
+                              type: string
+                        - type: object
+                          description: Node Info/Power Response
+                          properties:
+                            node1:
+                              oneOf:
+                                - type: string
+                                - type: number
+                            node2:
+                              oneOf:
+                                - type: string
+                                - type: number
+                            node3:
+                              oneOf:
+                                - type: string
+                                - type: number
+                            node4:
+                              oneOf:
+                                - type: string
+                                - type: number
+                        - type: object
+                          description: BMC SD Card Response
+                          properties:
+                            total:
+                              type: integer
+                            free:
+                              type: integer
+                            use:
+                              type: integer
+                        - type: object
+                          description: USB Mode Response
+                          properties:
+                            mode:
+                              type: integer
+                            node:
+                              type: integer
+
+    post:
+      summary: Set a key in the BMC
+      operationId: setKey
+      parameters:
+        - in: query
+          name: opt
+          required: true
+          schema:
+            type: string
+            enum: [ 'set' ]
+            default: 'set'
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [ "network", "power", "usb", "firmware" ]
+        - in: query
+          description: Only used for Network
+          name: cmd
+          required: false
+          schema:
+            type: string
+            enum: ['reset']
+        - in: query
+          description: Only used for USB. Valid values are "0" or "1". "0" for Host, "1" for Device
+          name: mode
+          required: false
+          schema:
+            type: number
+            enum: [0, 1]
+        - in: query
+          description: Only used for USB. Valid values are "0", "1", "2", "3". Relating to slots Node1-4
+          name: node
+          required: [mode]
+          schema:
+            type: number
+            enum: [0, 1, 2 ,3]
+        - in: query
+          description: Only used for Power.  Valid values are "0" or "1". "0" for OFF, "1" for ON.
+          name: node1
+          schema:
+            type: number
+            enum: [0, 1]
+        - in: query
+          description: Only used for Power.  Valid values are "0" or "1". "0" for OFF, "1" for ON.
+          name: node2
+          schema:
+            type: number
+            enum: [ 0, 1 ]
+        - in: query
+          description: Only used for Power.  Valid values are "0" or "1". "0" for OFF, "1" for ON.
+          name: node3
+          schema:
+            type: number
+            enum: [ 0, 1 ]
+        - in: query
+          description: Only used for Power.  Valid values are "0" or "1". "0" for OFF, "1" for ON.
+          name: node4
+          schema:
+            type: number
+            enum: [ 0, 1 ]
+      requestBody:
+        description: Only used for Firmware. Firmware file
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        required: false
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: Ok response
+                    properties:
+                      response:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            result:
+                              type: string
+#components:
+#  schemas:
+#  requestBodies:
+#    Firmware
